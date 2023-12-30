@@ -1,7 +1,7 @@
 import sqlite3
 
 
-def criar_dicionario(colunas, valores):
+def criar_dicionario(colunas: list, valores: tuple) -> dict:
     dados = dict()
     for i, coluna in enumerate(colunas):
         dados[coluna] = valores[i]
@@ -9,7 +9,7 @@ def criar_dicionario(colunas, valores):
     return dados
 
 
-def get_colunas_tabela(nome_tabela: str):
+def get_colunas_tabela(nome_tabela: str) -> list:
     conexao, cursor = abrir_conexao()
     cursor.execute(f"PRAGMA table_info({nome_tabela});")
     resultados = cursor.fetchall()
@@ -18,14 +18,13 @@ def get_colunas_tabela(nome_tabela: str):
     return [resultado[1] for resultado in resultados]
 
 
-def get_placeholders(colunas):
+def get_placeholders(colunas: list) -> str:
     return ', '.join(['?' for _ in range(len(colunas))])
 
 
 def abrir_conexao():
     conexao = sqlite3.connect("caca.db3")
     cursor = conexao.cursor()
-
     return conexao, cursor
 
 
@@ -35,7 +34,7 @@ def fechar_conexao(conexao, commit: bool = True):
     conexao.close()
 
 
-def get_usuario(usuario: str):
+def get_voluntario(usuario: str) -> dict:
     nome_tabela = 'voluntario'
     conexao, cursor = abrir_conexao()
     cursor.execute(f"SELECT * FROM {nome_tabela} WHERE usuario = '{usuario}'")
@@ -46,6 +45,46 @@ def get_usuario(usuario: str):
         return criar_dicionario(get_colunas_tabela(nome_tabela), resultado)
     else:
         return {}
+
+
+def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
+    lista_filtros = []
+    nome_tabela = 'voluntario'
+    conexao, cursor = abrir_conexao()
+
+    lista_filtros.append(f'codigo = {codigo}' if codigo else '')
+    lista_filtros.append(f'nome = {nome}' if nome else '')
+
+    clausura_where = ''
+    for filtro in lista_filtros:
+        if filtro:
+            if clausura_where:
+                clausura_where += " AND "
+            clausura_where += filtro
+
+    if clausura_where:
+        query = f"SELECT * FROM {nome_tabela} WHERE {clausura_where}"
+    else:
+        query = f"SELECT * FROM {nome_tabela}"
+
+    cursor.execute(query)
+    resultado = cursor.fetchall()
+    fechar_conexao(conexao, False)
+
+    if resultado:
+        lista_voluntarios = list()
+        for res in resultado:
+            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela), res))
+
+        return lista_voluntarios
+    else:
+        return []
+    
+
+
+
+
+
 
 
 def set_crianca(dados: dict):
@@ -71,7 +110,7 @@ def set_crianca(dados: dict):
     fechar_conexao(conexao)
 
 
-def get_crianca(codigo: int):
+def get_crianca(codigo: int) -> dict:
     nome_tabela = 'crianca'
     conexao, cursor = abrir_conexao()
     cursor.execute(f"SELECT * FROM {nome_tabela} WHERE codigo = {codigo}")
@@ -84,11 +123,13 @@ def get_crianca(codigo: int):
         return {}
     
 
-# print(get_usuario('caio'))
-print(get_crianca(1))
+print(listar_voluntarios())
+
+# print(get_voluntario('caio'))
+# print(get_crianca(1))
 # print(get_colunas_tabela('crianca'))
 
-colunas = get_colunas_tabela('crianca')
+# colunas = get_colunas_tabela('crianca')
 
 # set_crianca({
 #     colunas[1]: 'ana',

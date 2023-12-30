@@ -38,7 +38,7 @@ def login(json):
 
 @app.get("/login")
 def login(usuario, senha):
-    dados = models.get_usuario(usuario)
+    dados = models.get_voluntario(usuario)
 
     if not dados:
         return {
