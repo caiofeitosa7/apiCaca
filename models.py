@@ -81,12 +81,6 @@ def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
         return []
     
 
-
-
-
-
-
-
 def set_crianca(dados: dict):
     nome_tabela = 'crianca'
     colunas = get_colunas_tabela(nome_tabela)
@@ -123,14 +117,61 @@ def get_crianca(codigo: int) -> dict:
         return {}
     
 
-print(listar_voluntarios())
+def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict = None) -> list:
+    lista_filtros = []
+    nome_tabela = 'crianca'
+    conexao, cursor = abrir_conexao()
+
+    lista_filtros.append(f'cpf = {cpf}' if cpf else '')
+    lista_filtros.append(f"nome LIKE '%{nome}%'" if nome else '')
+    lista_filtros.append(f"escola = '{escola}'" if escola else '')
+
+    if idades:
+        idade_inicial = idades['idade1']
+        idade_final = idades['idade2']
+
+        if idade_inicial and not idade_final:
+            lista_filtros.append(f'idade = {idade_inicial}')
+        else:
+            lista_filtros.append(f'idade BETWEEN {idade_inicial} AND {idade_final}')
+
+    clausura_where = ''
+    for filtro in lista_filtros:
+        if filtro:
+            if clausura_where:
+                clausura_where += " AND "
+            clausura_where += filtro
+
+    if clausura_where:
+        query = f"SELECT * FROM {nome_tabela} WHERE {clausura_where}"
+    else:
+        query = f"SELECT * FROM {nome_tabela}"
+
+    cursor.execute(query)
+    resultado = cursor.fetchall()
+    fechar_conexao(conexao, False)
+
+    if resultado:
+        lista_voluntarios = list()
+        for res in resultado:
+            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela), res))
+
+        return lista_voluntarios
+    else:
+        return []
+    
+
+
+# print(listar_voluntarios())
+# print(listar_criancas(idades={'idade1': 23, 'idade2': 30}))
+print(listar_criancas(nome='ana'))
 
 # print(get_voluntario('caio'))
 # print(get_crianca(1))
 # print(get_colunas_tabela('crianca'))
 
-# colunas = get_colunas_tabela('crianca')
 
+# colunas = get_colunas_tabela('crianca')
 # set_crianca({
 #     colunas[1]: 'ana',
 #     colunas[2]: 444,
@@ -143,3 +184,5 @@ print(listar_voluntarios())
 #     colunas[9]: 12,
 #     colunas[10]: '2002-23-03'
 # })
+
+
