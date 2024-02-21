@@ -169,37 +169,3 @@ def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict
 # print(listar_criancas(idades={'idade1': 10, 'idade2': 30}))
 # print(listar_criancas(nome='ana'))
 
-
-# colunas = get_colunas_tabela('voluntario')
-# print(get_placeholders(colunas, True))
-
-
-# print(get_voluntario('caio'))
-# print(get_crianca(1))
-# print(get_colunas_tabela('crianca'))
-
-
-# colunas = get_colunas_tabela('crianca')
-# set_crianca({
-#     colunas[1]: 'gabriel',
-#     colunas[2]: 777,
-#     colunas[3]: 999,
-#     colunas[4]: 'rua 3, casa 8',
-#     colunas[5]: 'francisco prado',
-#     colunas[6]: '6 ano do ensino fundamental',
-#     colunas[7]: '12345678',
-#     colunas[8]: '99999999',
-#     colunas[9]: 10,
-#     colunas[10]: '2013-15-09',
-#     colunas[11]: 'foto exemplo',
-# })
-
-
-# colunas = get_colunas_tabela('voluntario')
-# set_voluntaio({
-#     colunas[1]: 'Jardel',
-#     colunas[2]: 'Diretoria',
-#     colunas[3]: 'jardel',
-#     colunas[4]: 'n0v4cr14tur4',
-#     colunas[5]: 'diretoria'
-# })

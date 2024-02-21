@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  # Precisa liberar acesso à todas as origens quando Front e Back rodam no localhost (CORS)
-import models, json
+import models
 
 app = FastAPI()
 
