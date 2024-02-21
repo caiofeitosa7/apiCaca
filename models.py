@@ -1,6 +1,18 @@
 import sqlite3
 
 
+def abrir_conexao():
+    conexao = sqlite3.connect("caca.db3")
+    cursor = conexao.cursor()
+    return conexao, cursor
+
+
+def fechar_conexao(conexao, commit: bool = True):
+    if commit:
+        conexao.commit()
+    conexao.close()
+
+
 def criar_dicionario(colunas: list, valores: tuple) -> dict:
     dados = dict()
     for i, coluna in enumerate(colunas):
@@ -9,12 +21,9 @@ def criar_dicionario(colunas: list, valores: tuple) -> dict:
     return dados
 
 
-def get_colunas_tabela(nome_tabela: str) -> list:
-    conexao, cursor = abrir_conexao()
+def get_colunas_tabela(nome_tabela: str, cursor) -> list:
     cursor.execute(f"PRAGMA table_info({nome_tabela});")
     resultados = cursor.fetchall()
-    fechar_conexao(conexao)
-
     return [resultado[1] for resultado in resultados]
 
 
@@ -38,23 +47,12 @@ def preparar_query(nome_tabela: str, lista_filtros: list) -> str:
     return query
 
 
-def abrir_conexao():
-    conexao = sqlite3.connect("caca.db3")
-    cursor = conexao.cursor()
-    return conexao, cursor
-
-
-def fechar_conexao(conexao, commit: bool = True):
-    if commit:
-        conexao.commit()
-    conexao.close()
-
-
-def set_voluntaio(dados: dict):
-    nome_tabela = 'voluntario'
-    colunas = get_colunas_tabela(nome_tabela)
+def set_voluntario(dados: dict):
     conexao, cursor = abrir_conexao()
     valores = tuple(dados.values())
+    nome_tabela = 'voluntario'
+
+    colunas = get_colunas_tabela(nome_tabela, cursor)
     query = f"""INSERT INTO {nome_tabela} (
             {get_placeholders(colunas[1:], True)}
         ) VALUES (
@@ -71,10 +69,11 @@ def get_voluntario(usuario: str) -> dict:
     conexao, cursor = abrir_conexao()
     cursor.execute(f"SELECT * FROM {nome_tabela} WHERE usuario = '{usuario}'")
     resultado = cursor.fetchone()
-    fechar_conexao(conexao, False)
 
     if resultado:
-        return criar_dicionario(get_colunas_tabela(nome_tabela), resultado)
+        dicionario = criar_dicionario(get_colunas_tabela(nome_tabela, cursor), resultado)
+        fechar_conexao(conexao, False)
+        return dicionario
     else:
         return {}
 
@@ -85,18 +84,18 @@ def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
     conexao, cursor = abrir_conexao()
 
     lista_filtros.append(f'codigo = {codigo}' if codigo else '')
-    lista_filtros.append(f'nome = {nome}' if nome else '')
+    lista_filtros.append(f"nome LIKE '%{nome}%'" if nome else '')
 
     query = preparar_query(nome_tabela, lista_filtros)
     cursor.execute(query)
     resultado = cursor.fetchall()
-    fechar_conexao(conexao, False)
 
     if resultado:
         lista_voluntarios = list()
         for res in resultado:
-            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela), res))
+            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela, cursor), res))
 
+        fechar_conexao(conexao, False)
         return lista_voluntarios
     else:
         return []
@@ -104,9 +103,9 @@ def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
 
 def set_crianca(dados: dict):
     nome_tabela = 'crianca'
-    colunas = get_colunas_tabela(nome_tabela)
-    conexao, cursor = abrir_conexao()
     valores = tuple(dados.values())
+    conexao, cursor = abrir_conexao()
+    colunas = get_colunas_tabela(nome_tabela, cursor)
     query = f"""INSERT INTO {nome_tabela} (
             {get_placeholders(colunas[1:], True)}
         ) VALUES (
@@ -123,10 +122,11 @@ def get_crianca(codigo: int) -> dict:
     conexao, cursor = abrir_conexao()
     cursor.execute(f"SELECT * FROM {nome_tabela} WHERE codigo = {codigo}")
     resultado = cursor.fetchone()
-    fechar_conexao(conexao, False)
 
     if resultado:
-        return criar_dicionario(get_colunas_tabela(nome_tabela), resultado)
+        dicionario = criar_dicionario(get_colunas_tabela(nome_tabela, cursor), resultado)
+        fechar_conexao(conexao, False)
+        return dicionario
     else:
         return {}
     
@@ -152,20 +152,20 @@ def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict
     query = preparar_query(nome_tabela, lista_filtros)
     cursor.execute(query)
     resultado = cursor.fetchall()
-    fechar_conexao(conexao, False)
 
     if resultado:
         lista_voluntarios = list()
         for res in resultado:
-            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela), res))
+            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela, cursor), res))
 
+        fechar_conexao(conexao, False)
         return lista_voluntarios
     else:
         return []
     
 
 
-# print(listar_voluntarios())
+# print(listar_voluntarios(nome='caio'))
 # print(listar_criancas(idades={'idade1': 10, 'idade2': 30}))
 # print(listar_criancas(nome='ana'))
 
@@ -179,20 +179,20 @@ def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict
 # print(get_colunas_tabela('crianca'))
 
 
-colunas = get_colunas_tabela('crianca')
-set_crianca({
-    colunas[1]: 'gabriel',
-    colunas[2]: 777,
-    colunas[3]: 999,
-    colunas[4]: 'rua 3, casa 8',
-    colunas[5]: 'francisco prado',
-    colunas[6]: '6 ano do ensino fundamental',
-    colunas[7]: '12345678',
-    colunas[8]: '99999999',
-    colunas[9]: 10,
-    colunas[10]: '2013-15-09',
-    colunas[11]: 'foto exemplo',
-})
+# colunas = get_colunas_tabela('crianca')
+# set_crianca({
+#     colunas[1]: 'gabriel',
+#     colunas[2]: 777,
+#     colunas[3]: 999,
+#     colunas[4]: 'rua 3, casa 8',
+#     colunas[5]: 'francisco prado',
+#     colunas[6]: '6 ano do ensino fundamental',
+#     colunas[7]: '12345678',
+#     colunas[8]: '99999999',
+#     colunas[9]: 10,
+#     colunas[10]: '2013-15-09',
+#     colunas[11]: 'foto exemplo',
+# })
 
 
 # colunas = get_colunas_tabela('voluntario')
