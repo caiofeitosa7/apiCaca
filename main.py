@@ -1,6 +1,8 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # Precisa liberar acesso à todas as origens quando Front e Back rodam no localhost (CORS)
 import models
+from fastapi import FastAPI
+
+# Precisa liberar acesso à todas as origens quando Front e Back rodam no localhost (CORS)
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -11,6 +13,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 async def root():
@@ -30,32 +33,16 @@ def login(dados: dict):
                 'nome': usuario_bd['nome'],
                 'funcao': usuario_bd['funcao'],
                 'disponivel': usuario_bd['disponivel'],
-                'tipo_acesso': usuario_bd['senha']
+                'tipo_acesso': usuario_bd['tipo_acesso']
             }
-    
+
     return {
         'status': 'danger',
-        'messagem': 'Usuario ou senha incorretos'
+        'mensagem': 'Usuário ou senha incorretos'
     }
 
 
-@app.get("/login")
-def login(usuario, senha):
-    dados = models.get_voluntario(usuario)
+@app.post("/listar_voluntario")
+def listar_voluntarios():
+    dados = models.listar_voluntarios(usuario)
 
-    if not dados:
-        return {
-            'erro': 'Usuario nao encontrado'
-        }
-    
-    if usuario == dados['usuario'] and senha == dados['senha']:
-        return {
-            'codigo': dados['codigo'],
-            'nome': dados['nome'],
-            'funcao': dados['funcao'],
-            'tipo_acesso': dados['tipo_acesso']
-        }
-    else:
-        return {
-            'erro': 'Usuario ou senha incorretos'
-        }
