@@ -1,4 +1,6 @@
+import datetime
 import sqlite3
+import imagemB64
 
 
 def abrir_conexao():
@@ -45,6 +47,70 @@ def preparar_query(nome_tabela: str, lista_filtros: list) -> str:
     query += f" WHERE {clausura_where}" if clausura_where else ""
 
     return query
+
+
+def inserir_registro_tabela(nome_tabela: str, dados: dict):
+    conexao, cursor = abrir_conexao()
+    valores = tuple(dados.values())
+    colunas = get_colunas_tabela(nome_tabela, cursor)
+
+    query = f"""INSERT INTO {nome_tabela} (
+                    {get_placeholders(colunas[1:], True)}
+                ) VALUES (
+                    {get_placeholders(colunas[1:], False)}
+                )
+            """
+
+    try:
+        cursor = conexao.cursor()
+        cursor.execute(query, valores)
+        cod_registro = cursor.lastrowid
+        fechar_conexao(conexao)
+
+        return cod_registro
+    except Exception as e:
+        print(e)
+
+
+def alterar_registro_tabela(nome_tabela: str, dados: dict):
+    conexao, cursor = abrir_conexao()
+    valores = tuple(dados.values())[1:]
+    colunas = get_colunas_tabela(nome_tabela, cursor)
+
+    lista = list()
+    for i, coluna in enumerate(colunas[1:]):
+        lista.append(f"{coluna} = ?")
+
+    query = f"""
+            UPDATE {nome_tabela}
+            SET 
+                {get_placeholders(lista, True)}
+            WHERE codigo = {dados['codigo']};
+        """
+
+    try:
+        cursor.execute(query, valores)
+        fechar_conexao(conexao)
+    except Exception as e:
+        print(e)
+
+
+def apagar_registro_tabela(nome_tabela: str, codigo: int):
+    conexao, cursor = abrir_conexao()
+    query = f"DELETE FROM {nome_tabela} WHERE codigo = {codigo}"
+    cursor.execute(query)
+    fechar_conexao(conexao)
+
+
+def listagem_basica(nome_tabela) -> list:
+    conexao, cursor = abrir_conexao()
+    query = f"SELECT * FROM {nome_tabela}"
+    cursor.execute(query)
+    resultados = cursor.fetchall()
+    colunas = get_colunas_tabela(nome_tabela, cursor)
+
+    fechar_conexao(conexao)
+    return [criar_dicionario(colunas, list(resultado)) for resultado in resultados]
 
 
 def set_voluntario(dados: dict):
@@ -99,26 +165,23 @@ def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
         return lista_voluntarios
     else:
         return []
-    
-
-def set_crianca(dados: dict):
-    nome_tabela = 'crianca'
-    valores = tuple(dados.values())
-    conexao, cursor = abrir_conexao()
-    colunas = get_colunas_tabela(nome_tabela, cursor)
-    query = f"""INSERT INTO {nome_tabela} (
-            {get_placeholders(colunas[1:], True)}
-        ) VALUES (
-            {get_placeholders(colunas[1:], False)}
-        )
-    """
-
-    cursor.execute(query, valores)
-    fechar_conexao(conexao)
 
 
-def get_crianca(codigo: int) -> dict:
-    nome_tabela = 'crianca'
+def set_aluno(dados: dict, cod_responsavel: int):
+    chave_foto = list(dados.keys())[0]
+    dados[chave_foto] = imagemB64.base64_to_image(dados[chave_foto])
+    dados['dt_alteracao'] = datetime.date.today().strftime("%Y-%m-%d")
+    dados['cod_responsavel'] = cod_responsavel
+
+    oficinas = [key for key in list(dados.keys()) if 'oficina' in key]
+    for ofc in oficinas:
+        del dados[ofc]
+
+    inserir_registro_tabela('aluno', dados)
+
+
+def get_aluno(codigo: int) -> dict:
+    nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
     cursor.execute(f"SELECT * FROM {nome_tabela} WHERE codigo = {codigo}")
     resultado = cursor.fetchone()
@@ -131,9 +194,9 @@ def get_crianca(codigo: int) -> dict:
         return {}
     
 
-def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict = None) -> list:
+def listar_alunos(cpf: int = 0, nome: str = '', escola: str = '', idades: dict = None) -> list:
     lista_filtros = []
-    nome_tabela = 'crianca'
+    nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
 
     lista_filtros.append(f'cpf = {cpf}' if cpf else '')
@@ -162,10 +225,39 @@ def listar_criancas(cpf: int = 0, nome: str = '', escola: str = '', idades: dict
         return lista_voluntarios
     else:
         return []
-    
+
+
+def listar_escolas():
+    nome_tabela = 'escola'
+    conexao, cursor = abrir_conexao()
+    cursor.execute(f"SELECT * FROM {nome_tabela} ORDER BY nome")
+    resultado = cursor.fetchall()
+    colunas = get_colunas_tabela(nome_tabela, cursor)
+    lista_escolas = [criar_dicionario(colunas, valores) for valores in resultado]
+
+    fechar_conexao(conexao, False)
+    return lista_escolas
+
+
+def set_responsavel(dados: dict):
+    print(dados)
+    return inserir_registro_tabela('responsavel', dados)
+
+
+
+
+
+# set_responsavel({
+#     'nome_responsavel': 'oi',
+#     'cpf_responsavel': 'caio',
+#     'endereco_responsavel': 'rua',
+#     'fone_responsavel': '95',
+#     'ocupacao_responsavel': 'prog'
+# })
+
 
 
 # print(listar_voluntarios(nome='caio'))
-# print(listar_criancas(idades={'idade1': 10, 'idade2': 30}))
-# print(listar_criancas(nome='ana'))
+# print(listar_alunos(idades={'idade1': 10, 'idade2': 30}))
+# print(listar_alunos(nome='ana'))
 

@@ -1,5 +1,8 @@
+import time
+
 from flask import Flask, request, jsonify, session
 from flask_cors import CORS	   # pip install -U flask-cors
+
 import models
 
 app = Flask(__name__)
@@ -32,6 +35,20 @@ def login():
         })
 
 
+@app.route("/registrar_aluno", methods=['POST'])
+def addAluno():
+    if request.method == 'POST':
+        dados = request.json
+
+        cod_reponsavel = models.set_responsavel(dados['responsavel'])
+        del dados['responsavel']
+
+        for aluno, atributos in dados.items():
+            models.set_aluno(atributos, cod_reponsavel)
+
+        return jsonify({'status': 'success'})
+
+
 @app.route("/listar_voluntarios", methods=['GET', 'POST'])
 def voluntarios():
     if request.method == 'POST':
@@ -39,6 +56,12 @@ def voluntarios():
         return jsonify(models.listar_voluntarios(nome=dados['nome_voluntario']))
     else:
         return jsonify(models.listar_voluntarios())
+
+
+@app.route("/listar_escolas", methods=['GET'])
+def escolas():
+    if request.method == 'GET':
+        return jsonify(models.listar_escolas())
 
 
 if __name__ == "__main__":
