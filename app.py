@@ -35,6 +35,12 @@ def login():
         })
 
 
+@app.route("/listar_escolas", methods=['GET'])
+def escolas():
+    if request.method == 'GET':
+        return jsonify(models.listar_escolas())
+
+
 @app.route("/registrar_aluno", methods=['POST'])
 def addAluno():
     if request.method == 'POST':
@@ -58,11 +64,66 @@ def voluntarios():
         return jsonify(models.listar_voluntarios())
 
 
-@app.route("/listar_escolas", methods=['GET'])
-def escolas():
+@app.route("/listar_alunos", methods=['GET', 'POST'])
+def alunos():
+    if request.method == 'POST':
+        dados = request.json
+        alunos = models.listar_alunos(
+            nome=dados['nome_aluno'],
+            sexo=dados['sexo'],
+            idades={
+                'idade1': dados['idade1'],
+                'idade2': dados['idade2']
+            }
+        )
+    else:
+        alunos = models.listar_alunos()
+
+    return jsonify({
+        'alunos': alunos,
+        'quantidade': len(alunos)
+    })
+
+
+@app.route("/visualizar_aluno", methods=['GET'])
+def visualizar_aluno(codigo: int):
     if request.method == 'GET':
-        return jsonify(models.listar_escolas())
+        aluno = models.get_aluno(codigo)
+
+        if aluno:
+            alunos_mesmo_responsavel = models.get_alunos_mesmo_responsavel(aluno['codigo'], aluno['cod_responsavel'])
+
+            return jsonify({
+                'aluno': aluno,
+                'outros_alunos': alunos_mesmo_responsavel,
+                'success': 'Aluno encontrado!'
+            })
+
+        return jsonify({
+            'danger': 'Aluno não encontrado!',
+        })
+
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

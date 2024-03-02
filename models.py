@@ -23,10 +23,14 @@ def criar_dicionario(colunas: list, valores: tuple) -> dict:
     return dados
 
 
-def get_colunas_tabela(nome_tabela: str, cursor) -> list:
+def get_colunas_tabela(nome_tabela, cursor, indentificacao: bool = False) -> list:
     cursor.execute(f"PRAGMA table_info({nome_tabela});")
     resultados = cursor.fetchall()
-    return [resultado[1] for resultado in resultados]
+
+    if indentificacao:
+        return [f'{resultado[1]}_{nome_tabela}' for resultado in resultados]
+    else:
+        return [resultado[1] for resultado in resultados]
 
 
 def get_placeholders(colunas: list, usa_colunas: bool) -> str:
@@ -35,7 +39,7 @@ def get_placeholders(colunas: list, usa_colunas: bool) -> str:
     return ', '.join(['?' for _ in range(len(colunas))])
 
 
-def preparar_query(nome_tabela: str, lista_filtros: list) -> str:
+def preparar_query_generica(nome_tabela: str, lista_filtros: list) -> str:
     clausura_where = ''
     for filtro in lista_filtros:
         if filtro:
@@ -152,7 +156,7 @@ def listar_voluntarios(codigo: int = 0, nome: str = '') -> list:
     lista_filtros.append(f'codigo = {codigo}' if codigo else '')
     lista_filtros.append(f"nome LIKE '%{nome}%'" if nome else '')
 
-    query = preparar_query(nome_tabela, lista_filtros)
+    query = preparar_query_generica(nome_tabela, lista_filtros)
     cursor.execute(query)
     resultado = cursor.fetchall()
 
@@ -183,48 +187,77 @@ def set_aluno(dados: dict, cod_responsavel: int):
 def get_aluno(codigo: int) -> dict:
     nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
-    cursor.execute(f"SELECT * FROM {nome_tabela} WHERE codigo = {codigo}")
+    cursor.execute(f"""
+        SELECT *
+        FROM {nome_tabela}
+            INNER JOIN responsavel AS R ON R.codigo = cod_responsavel 
+        WHERE {nome_tabela}.codigo = {codigo}
+    """)
     resultado = cursor.fetchone()
 
     if resultado:
-        dicionario = criar_dicionario(get_colunas_tabela(nome_tabela, cursor), resultado)
+        colunas = get_colunas_tabela(nome_tabela, cursor) + \
+                  get_colunas_tabela('responsavel', cursor, True)
+        dicionario = criar_dicionario(colunas, resultado)
         fechar_conexao(conexao, False)
+
+        dicionario['foto'] = imagemB64.image_to_base64(dicionario['foto'])
         return dicionario
     else:
         return {}
-    
 
-def listar_alunos(cpf: int = 0, nome: str = '', escola: str = '', idades: dict = None) -> list:
+
+def get_alunos_mesmo_responsavel(cod_aluno, cod_responsavel) -> list:
+    nome_tabela = 'aluno'
+    conexao, cursor = abrir_conexao()
+    cursor.execute(f"""
+            SELECT codigo, nome
+            FROM {nome_tabela}
+            WHERE cod_responsavel = {cod_responsavel}
+                AND codigo <> {cod_aluno}
+        """)
+    resultado = cursor.fetchall()
+
+    colunas = ['codigo', 'nome']
+    alunos = [criar_dicionario(colunas, res) for res in resultado]
+    fechar_conexao(conexao, False)
+    return alunos
+
+
+def listar_alunos(nome: str = '', sexo: str = '', idades: dict = None) -> list:
     lista_filtros = []
     nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
 
-    lista_filtros.append(f'cpf = {cpf}' if cpf else '')
     lista_filtros.append(f"nome LIKE '%{nome}%'" if nome else '')
-    lista_filtros.append(f"escola = '{escola}'" if escola else '')
+    lista_filtros.append(f"sexo = '{sexo}'" if sexo else '')
 
     if idades:
-        idade_inicial = idades['idade1']
-        idade_final = idades['idade2']
+        idade_inicial = list(idades.keys())[0]
+        idade_final = list(idades.keys())[1]
 
         if idade_inicial and not idade_final:
             lista_filtros.append(f'idade = {idade_inicial}')
         else:
             lista_filtros.append(f'idade BETWEEN {idade_inicial} AND {idade_final}')
 
-    query = preparar_query(nome_tabela, lista_filtros)
+    query = preparar_query_generica(nome_tabela, lista_filtros)
     cursor.execute(query)
     resultado = cursor.fetchall()
 
     if resultado:
-        lista_voluntarios = list()
+        lista_alunos = list()
         for res in resultado:
-            lista_voluntarios.append(criar_dicionario(get_colunas_tabela(nome_tabela, cursor), res))
+            lista_alunos.append(criar_dicionario(get_colunas_tabela(nome_tabela, cursor), res))
 
         fechar_conexao(conexao, False)
-        return lista_voluntarios
+        return lista_alunos
     else:
         return []
+
+
+def set_responsavel(dados: dict):
+    return inserir_registro_tabela('responsavel', dados)
 
 
 def listar_escolas():
@@ -239,25 +272,20 @@ def listar_escolas():
     return lista_escolas
 
 
-def set_responsavel(dados: dict):
-    print(dados)
-    return inserir_registro_tabela('responsavel', dados)
 
 
 
 
 
-# set_responsavel({
-#     'nome_responsavel': 'oi',
-#     'cpf_responsavel': 'caio',
-#     'endereco_responsavel': 'rua',
-#     'fone_responsavel': '95',
-#     'ocupacao_responsavel': 'prog'
-# })
 
 
 
-# print(listar_voluntarios(nome='caio'))
-# print(listar_alunos(idades={'idade1': 10, 'idade2': 30}))
-# print(listar_alunos(nome='ana'))
+
+
+
+
+
+
+
+
 
