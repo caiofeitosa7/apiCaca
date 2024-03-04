@@ -85,8 +85,8 @@ def alunos():
     })
 
 
-@app.route("/visualizar_aluno", methods=['GET'])
-def visualizar_aluno(codigo: int):
+@app.route("/visualizar_aluno/<int:codigo>", methods=['GET'])
+def visualizar_aluno(codigo):
     if request.method == 'GET':
         aluno = models.get_aluno(codigo)
 
@@ -95,12 +95,12 @@ def visualizar_aluno(codigo: int):
 
             return jsonify({
                 'aluno': aluno,
-                'outros_alunos': alunos_mesmo_responsavel,
-                'success': 'Aluno encontrado!'
+                'alunos_adjacentes': alunos_mesmo_responsavel,
+                'status': 'success'
             })
 
         return jsonify({
-            'danger': 'Aluno não encontrado!',
+            'status': 'danger'
         })
 
 
