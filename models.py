@@ -233,12 +233,12 @@ def listar_alunos(nome: str = '', sexo: str = '', idades: dict = None) -> list:
     lista_filtros.append(f"sexo = '{sexo}'" if sexo else '')
 
     if idades:
-        idade_inicial = list(idades.keys())[0]
-        idade_final = list(idades.keys())[1]
+        idade_inicial = idades['idade1']
+        idade_final = idades['idade2']
 
         if idade_inicial and not idade_final:
             lista_filtros.append(f'idade = {idade_inicial}')
-        else:
+        elif (idade_inicial and idade_final) or (not idade_inicial and idade_final):
             lista_filtros.append(f'idade BETWEEN {idade_inicial} AND {idade_final}')
 
     query = preparar_query_generica(nome_tabela, lista_filtros)

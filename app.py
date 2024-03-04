@@ -69,11 +69,11 @@ def alunos():
     if request.method == 'POST':
         dados = request.json
         alunos = models.listar_alunos(
-            nome=dados['nome_aluno'],
+            nome=dados['nome'],
             sexo=dados['sexo'],
             idades={
-                'idade1': dados['idade1'],
-                'idade2': dados['idade2']
+                'idade1': int(dados['idade1']) if dados['idade1'] else 0,
+                'idade2': int(dados['idade2']) if dados['idade2'] else 0
             }
         )
     else:
@@ -102,7 +102,6 @@ def visualizar_aluno(codigo: int):
         return jsonify({
             'danger': 'Aluno não encontrado!',
         })
-
 
 
 if __name__ == "__main__":
