@@ -46,6 +46,11 @@ def addAluno():
     if request.method == 'POST':
         dados = request.json
 
+        if dados['dependente-0'].get('codigo'):  # EDICAO DE ALUNO EXISTENTE
+            models.atualizar_responsavel(dados['responsavel'])
+            models.atualizar_aluno(dados['dependente-0'])
+            return jsonify({'status': 'success'})
+
         cod_reponsavel = models.set_responsavel(dados['responsavel'])
         del dados['responsavel']
 

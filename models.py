@@ -1,4 +1,5 @@
 import datetime
+import os
 import sqlite3
 import imagemB64
 
@@ -76,7 +77,7 @@ def inserir_registro_tabela(nome_tabela: str, dados: dict):
         print(e)
 
 
-def alterar_registro_tabela(nome_tabela: str, dados: dict):
+def alterar_registro_tabela(nome_tabela: str, dados: dict, key: str = 'codigo'):
     conexao, cursor = abrir_conexao()
     valores = tuple(dados.values())[1:]
     colunas = get_colunas_tabela(nome_tabela, cursor)
@@ -89,7 +90,7 @@ def alterar_registro_tabela(nome_tabela: str, dados: dict):
             UPDATE {nome_tabela}
             SET 
                 {get_placeholders(lista, True)}
-            WHERE codigo = {dados['codigo']};
+            WHERE codigo = {dados[key]};
         """
 
     try:
@@ -184,6 +185,24 @@ def set_aluno(dados: dict, cod_responsavel: int):
     inserir_registro_tabela('aluno', dados)
 
 
+def apagar_foto_antiga(cod_aluno: int):
+    arquivo = get_foto_aluno(cod_aluno)
+    os.remove(os.path.join("imagens", arquivo))
+
+
+def atualizar_aluno(dados: dict):
+    oficinas = [key for key in list(dados.keys()) if 'oficina' in key]
+    for ofc in oficinas:
+        del dados[ofc]
+
+    chave_foto = list(dados.keys())[1]
+    dados[chave_foto] = imagemB64.base64_to_image(dados[chave_foto])
+    dados['dt_alteracao'] = datetime.date.today().strftime("%Y-%m-%d")
+
+    apagar_foto_antiga(dados['codigo'])
+    alterar_registro_tabela('aluno', dados)
+
+
 def get_aluno(codigo: int) -> dict:
     nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
@@ -207,6 +226,15 @@ def get_aluno(codigo: int) -> dict:
         return {}
 
 
+def get_foto_aluno(codigo: int):
+    nome_tabela = 'aluno'
+    conexao, cursor = abrir_conexao()
+    cursor.execute(f"SELECT foto FROM {nome_tabela} WHERE codigo = {codigo}")
+    foto = str(cursor.fetchone()[0])
+    fechar_conexao(conexao, False)
+    return foto
+
+
 def get_alunos_mesmo_responsavel(cod_aluno, cod_responsavel) -> list:
     nome_tabela = 'aluno'
     conexao, cursor = abrir_conexao()
@@ -215,6 +243,7 @@ def get_alunos_mesmo_responsavel(cod_aluno, cod_responsavel) -> list:
             FROM {nome_tabela}
             WHERE cod_responsavel = {cod_responsavel}
                 AND codigo <> {cod_aluno}
+            ORDER BY nome
         """)
     resultado = cursor.fetchall()
 
@@ -260,6 +289,10 @@ def set_responsavel(dados: dict):
     return inserir_registro_tabela('responsavel', dados)
 
 
+def atualizar_responsavel(dados: dict):
+    alterar_registro_tabela('responsavel', dados, 'codigo_responsavel')
+
+
 def listar_escolas():
     nome_tabela = 'escola'
     conexao, cursor = abrir_conexao()
@@ -270,22 +303,5 @@ def listar_escolas():
 
     fechar_conexao(conexao, False)
     return lista_escolas
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
