@@ -4,5 +4,5 @@ API para fornecer dados ao site/sistema do Centro de Apoio à Criança e ao Adol
 ## :rocket: Rodando o projeto
 Para rodar o projeto presente neste repositório é necessário clonar o mesmo e, em seguida, executar o seguinte comando:
 ```
-uvicorn main:app --reload
+python app.py
 ```
